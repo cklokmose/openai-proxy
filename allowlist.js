@@ -50,7 +50,19 @@ export function isEndpointAllowed(endpoint) {
     normalizedEndpoint = '/v1' + normalizedEndpoint;
   }
   
-  return allowlistConfig.endpoints.includes(normalizedEndpoint);
+  // Check for exact match or prefix match (for endpoints with path parameters)
+  return allowlistConfig.endpoints.some(allowedEndpoint => {
+    // Exact match
+    if (normalizedEndpoint === allowedEndpoint) {
+      return true;
+    }
+    // Prefix match - check if the endpoint starts with the allowed endpoint followed by /
+    // This allows /v1/responses to match /v1/responses/{id}
+    if (normalizedEndpoint.startsWith(allowedEndpoint + '/')) {
+      return true;
+    }
+    return false;
+  });
 }
 
 /**
