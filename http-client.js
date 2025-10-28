@@ -219,18 +219,25 @@ class OpenAIHttpClient {
    * Make a JSON request to OpenAI
    */
   async makeJsonRequest(path, data, options = {}) {
+    const method = options.method || 'POST';
     const requestOptions = {
       path,
-      method: 'POST',
+      method,
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(JSON.stringify(data)),
         ...options.headers
       },
       ...options
     };
 
-    const response = await this.makeRequest(requestOptions, JSON.stringify(data));
+    // Only add Content-Type and Content-Length for requests with body
+    let requestData = null;
+    if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
+      requestData = JSON.stringify(data);
+      requestOptions.headers['Content-Type'] = 'application/json';
+      requestOptions.headers['Content-Length'] = Buffer.byteLength(requestData);
+    }
+
+    const response = await this.makeRequest(requestOptions, requestData);
     
     if (response.statusCode >= 400) {
       const error = new Error(`HTTP ${response.statusCode}: ${response.statusText}`);

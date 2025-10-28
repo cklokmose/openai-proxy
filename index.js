@@ -312,6 +312,17 @@ app.use(async (req, res) => {
 });
 
 async function handleJsonRequest(req, res, user, userKey, timestamp, ip, startTime) {
+  // For GET and DELETE requests, there's no body to process
+  if (req.method === 'GET' || req.method === 'DELETE') {
+    console.log(`[DEBUG] Handling ${req.method} request to ${req.url}`);
+    const logLine = `[${timestamp}] ✅ ${user.name} <${user.email}> from ${ip} → ${req.method} ${req.url}`;
+    fs.writeFileSync(LOG_PATH, logLine + '\n', { flag: 'a' });
+    
+    // Pass method and empty body to handler
+    await handleJsonRequestWithClient(httpClient, req, res, null, user, userKey, timestamp, startTime, req.method);
+    return;
+  }
+
   // Utility: Redact base64 image data in request body for logging, but log a short prefix for traceability
   function redactBase64Images(obj) {
     if (Array.isArray(obj)) {
@@ -508,9 +519,12 @@ async function handleStreamingRequestWithClient(client, req, res, requestBody, u
   }
 }
 
-async function handleJsonRequestWithClient(client, req, res, requestBody, user, userKey, timestamp, startTime) {
+async function handleJsonRequestWithClient(client, req, res, requestBody, user, userKey, timestamp, startTime, method = null) {
   try {
-    const response = await client.makeJsonRequest(req.url, requestBody);
+    // Use provided method or fall back to req.method, default to POST
+    const httpMethod = method || req.method || 'POST';
+    
+    const response = await client.makeJsonRequest(req.url, requestBody, { method: httpMethod });
     const responseTime = Date.now() - startTime;
     const responseTimeSeconds = responseTime / 1000;
     
