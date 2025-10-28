@@ -115,6 +115,14 @@ export function validateAndNormalizeRequest(requestBody, endpoint) {
     normalizedBody.model = getDefaultModel();
     console.log(`📝 No model specified, using default: ${normalizedBody.model}`);
   }
+
+  // Ensure the token usage is always sent before end of streaming
+  if (normalizedBody.stream === true) {
+    if (!normalizedBody.stream_options) {
+        normalizedBody.stream_options = {};
+    }
+    normalizedBody.stream_options.include_usage = true;
+  }
   
   return { valid: true, body: normalizedBody };
 }
